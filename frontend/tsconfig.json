@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
+    "module": "NodeNext",
     "lib": [
       "ES2020",
       "DOM",
@@ -23,7 +23,8 @@
     "skipLibCheck": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "node_modules/lit-scss-loader/types.d.ts"
   ],
   "references": [
     {
