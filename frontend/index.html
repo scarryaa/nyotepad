@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>nyaotepad</title>
+    <link href="./src/style.css" rel="stylesheet">
+    <script src="./src/tab-group.ts" type="module"></script>
+</head>
+<body>
+    <app-tab-group></app-tab-group>
+
+    <script>
+        const menu = document.querySelector('app-tab-group');
+        menu.menuItems = ['1', '2', '3'];
+    </script>
+</body>
+</html>
+
