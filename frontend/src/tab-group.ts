@@ -1,4 +1,4 @@
-import { LitElement, html, css, PropertyDeclarations } from "lit-element";
+import { LitElement, html, css } from "lit-element";
 import { customElement } from "lit/decorators.js";
 
 /**
@@ -28,28 +28,25 @@ export class TabGroup extends LitElement {
   render() {
     return html`
       <div class="tab-group">
-        ${this.menuItems.map(
-          (menuItem) => html`
-            <div class="dropdown">
-              <button @click=${this.handleDropdownClick}>
-                Dropdown ${menuItem}
+        ${this.tabs.map(
+          (tab) => html`
+            <div class="tab">
+              <button id=${tab} @click=${this.handleDropdownClick}>
+                ${tab}
               </button>
-              <div class="dropdown-content">
-                <div class="dropdown-item">Option 1</div>
-                <div class="dropdown-item">Option 2</div>
-                <div class="dropdown-item">Option 3</div>
-              </div>
             </div>
           `
         )}
       </div>
+      <div class="content"></div>
     `;
   }
 
   handleDropdownClick(event: MouseEvent) {
-    const dropdownContent = event.target?.nextElementSibling;
-    dropdownContent.style.display =
-      dropdownContent.style.display === "block" ? "none" : "block";
+    // switch tab content
+    this.currentTab = (event.target as unknown as { id: string }).id;
+    const content = this.shadowRoot?.querySelector(".content");
+    if (content) content.innerHTML = this.currentTab;
   }
 
   static styles = css`
@@ -60,12 +57,12 @@ export class TabGroup extends LitElement {
       border: 1px solid #ccc;
     }
 
-    .dropdown {
+    .tab {
       position: relative;
       display: inline-block;
     }
 
-    .dropdown > button {
+    .tab > button {
       background-color: inherit;
       border: none;
       cursor: pointer;
@@ -73,36 +70,28 @@ export class TabGroup extends LitElement {
       font-size: 16px;
     }
 
-    .dropdown-content {
-      display: none;
+    .content {
       position: absolute;
-      background-color: #f9f9f9;
+      background-color: red;
       min-width: 160px;
-      box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+      top: 100px;
       z-index: 1;
     }
 
-    .dropdown:hover .dropdown-content {
-      display: block;
-    }
-
-    .dropdown-item {
-      padding: 12px 16px;
-      cursor: pointer;
-    }
-
-    .dropdown-item:hover {
+    .tab:hover {
       background-color: #f1f1f1;
     }
   `;
 
   static properties = {
-    menuItems: { type: Array },
+    tabs: { type: Array },
+    currentTab: { type: String },
   };
 
   constructor() {
     super();
-    this.menuItems = [];
+    this.tabs = [];
+    this.currentTab = "";
   }
 }
 

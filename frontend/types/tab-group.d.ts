@@ -9,6 +9,8 @@ import { LitElement } from "lit";
 export declare class TabGroup extends LitElement {
   static styles: import("lit").CSSResult;
   render(): import("lit-html").TemplateResult<1>;
+  handleDropdownClick(event: MouseEvent): void;
+  tabs: string[];
 }
 declare global {
   interface HTMLElementTagNameMap {
