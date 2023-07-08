@@ -2,57 +2,92 @@ import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { CodeEditor } from "./code-editor";
 
+import * as monaco from "monaco-editor";
+
+interface Tab {
+  id: number;
+  name: string;
+  model: monaco.editor.ITextModel;
+}
+
 @customElement("app-tabs")
 class Tabs extends LitElement {
-  @property() editors?: { tab: string; editor: CodeEditor }[];
-  @property() editor?: CodeEditor;
-  @property() tab?: string;
-  _currentTab: string = "1";
+  _editor!: CodeEditor;
 
   constructor() {
     super();
-    this.editors = [];
   }
 
-  _init = () => {
-    this.editor = this.shadowRoot?.querySelector(".editor") as CodeEditor;
-    this.editor?.addEventListener("editor-ready", () => {
-      this._newTab();
+  @property({ type: Number }) _currentTab: number = 0;
+  @property({ type: Array }) tabs: Tab[] = [];
+
+  _createNewTab(index: number): Tab {
+    return {
+      id: Math.random(),
+      name: `Tab ${index}`,
+      model: monaco.editor.createModel("", ""),
+    };
+  }
+
+  _setActiveTab(id: number): void {
+    this._currentTab = id;
+    const tab = this.tabs.find((tab) => tab.id === id);
+    if (tab) {
+      this._editor.editor?.setModel(tab.model);
+    }
+  }
+
+  _closeTab(id: number): void {
+    this.tabs = this.tabs.filter((tab) => tab.id !== id);
+
+    // if we are on the tab we are closing, switch to the last tab
+    if (this._currentTab === id)
+      this._setActiveTab(this.tabs[this.tabs.length - 1].id);
+    // otherwise, do nothing
+  }
+
+  _newTab(): void {
+    const newTab = this._createNewTab(this.tabs.length + 1);
+    this.tabs = [...this.tabs, newTab];
+    this._setActiveTab(newTab.id);
+  }
+
+  firstUpdated() {
+    this._editor = this.shadowRoot?.querySelector("code-editor") as CodeEditor;
+    this._editor.editor?.onDidChangeModelContent(() => {
+      this.tabs = this.tabs.map((tab) => {
+        if (tab.id === this._currentTab) {
+          tab.model.setValue(this._editor.getValue());
+        }
+        return tab;
+      });
     });
-  };
-
-  _changeTab = (n: number) => {
-    this.editor = this.shadowRoot?.querySelector(".editor") as CodeEditor;
-    this.editor.switchTabs(this._currentTab, n.toString());
-    this._currentTab = n.toString();
-
-    // add active class to tab
-    const tabs = this.shadowRoot?.querySelectorAll(".tab");
-    tabs?.forEach((tab) => {
-      tab.classList.remove("active");
-    });
-
-    const activeTab = this.shadowRoot?.querySelector(`.tab:nth-child(${n})`);
-    activeTab?.classList.add("active");
-  };
-
-  _newTab = () => {
-    // insert new tab
-    const tabs = this.shadowRoot?.querySelector(".tabs");
-    const newTab = document.createElement("div");
-    newTab.classList.add("tab");
-    newTab.innerHTML = `Tab ${this.editors?.length + 1}`;
-    newTab.addEventListener("click", () =>
-      this._changeTab((this._currentTab as unknown as number) + 1)
-    );
-    tabs?.insertBefore(newTab, tabs.lastChild);
-    this.editor?.newModel("", "javascript");
-  };
+  }
 
   render() {
     return html`
       <div class="tabs">
-        <div class="tab" @click=${() => this._changeTab(1)}>Tab 1</div>
+        ${this.tabs.map(
+          (tab) => html`
+            <div
+              id=${tab.id}
+              class="tab ${this._currentTab === tab.id ? "active" : ""}"
+              @click=${() => this._setActiveTab(tab.id)}
+            >
+              ${tab.name}
+
+              <div
+                class="close-tab"
+                @click=${(e: Event) => {
+                  e.stopPropagation(); // prevent tab from activating when close button is clicked
+                  this._closeTab(tab.id);
+                }}
+              >
+                x
+              </div>
+            </div>
+          `
+        )}
         <div class="new-tab" @click=${() => this._newTab()}>+</div>
       </div>
       <main class="main">
@@ -60,21 +95,30 @@ class Tabs extends LitElement {
       </main>
     `;
   }
-
   static get styles() {
     return css`
       .tabs {
         display: flex;
         flex-direction: row;
         align-items: center;
-        width: 100%;
+        height: 40px;
         background-color: #fff;
         border-bottom: 1px solid #ccc;
+        user-select: none;
+        width: calc(100% - 33px);
+        overflow-x: scroll;
       }
 
       .tab {
         padding: 10px;
         cursor: pointer;
+        min-width: 70px;
+        min-height: 20px;
+        border-right: 1px solid #ccc;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        user-select: none;
       }
 
       .tab.active {
@@ -102,6 +146,32 @@ class Tabs extends LitElement {
         cursor: pointer;
         position: absolute;
         right: 0;
+        user-select: none;
+        background-color: #fff;
+        border-bottom: 1px solid #ccc;
+        border-left: 1px solid #ccc;
+        height: 20px;
+      }
+
+      .close-tab {
+        display: none;
+        padding: 0 5px;
+        margin-left: 2px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .tab:hover .close-tab {
+        display: inline-block;
+      }
+
+      .close-tab:hover {
+        background-color: #ccc;
+      }
+
+      .main {
+        width: 100%;
+        height: calc(100% - 40px);
       }
     `;
   }

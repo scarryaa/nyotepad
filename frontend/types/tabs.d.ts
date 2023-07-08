@@ -1,14 +1,20 @@
 import { LitElement } from "lit";
 import { CodeEditor } from "./code-editor";
+import * as monaco from "monaco-editor";
+interface Tab {
+    id: number;
+    name: string;
+    model: monaco.editor.ITextModel;
+}
 declare class Tabs extends LitElement {
-    editors?: {
-        tab: string;
-        editor: CodeEditor;
-    }[];
-    editor?: CodeEditor;
-    tab?: string;
-    _currentTab: string;
-    _changeTab: (n: number) => void;
+    _editor: CodeEditor;
+    constructor();
+    _currentTab: number;
+    tabs: Tab[];
+    _createNewTab(index: number): Tab;
+    _setActiveTab(id: number): void;
+    _closeTab(id: number): void;
+    _newTab(): void;
     firstUpdated(): void;
     render(): import("lit-html").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;

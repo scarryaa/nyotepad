@@ -11,6 +11,7 @@ import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 
+// @ts-ignore
 self.MonacoEnvironment = {
   getWorker(_: any, label: string) {
     if (label === "json") {
@@ -33,31 +34,6 @@ self.MonacoEnvironment = {
 export class CodeEditor extends LitElement {
   private container: Ref<HTMLElement> = createRef();
   editor?: monaco.editor.IStandaloneCodeEditor;
-  _editors: {
-    tab: string;
-    viewState: monaco.editor.ICodeEditorViewState | undefined | null;
-    model: monaco.editor.ITextModel | undefined | null;
-  }[] = [
-    {
-      tab: "1",
-      viewState: null,
-      model: monaco.editor.createModel("", "javascript"),
-    },
-  ];
-
-  public newModel = (code: string, lang: string) => {
-    const model = monaco.editor.createModel(code, lang);
-    this._editors.push({
-      tab: (this._editors.length + 1).toString(),
-      viewState: null,
-      model,
-    });
-    this.switchTabs(
-      this._editors.length.toString(),
-      (this._editors.length + 1).toString()
-    );
-  };
-
   @property() theme?: string;
   @property() language?: string;
   @property() code?: string;
@@ -67,7 +43,6 @@ export class CodeEditor extends LitElement {
       --editor-width: 100%;
       --editor-height: 100vh;
     }
-
     main {
       width: var(--editor-width);
       height: var(--editor-height);
@@ -133,50 +108,11 @@ export class CodeEditor extends LitElement {
       automaticLayout: true,
       model: null,
     });
-
     window
       .matchMedia("(prefers-color-scheme: dark)")
       .addEventListener("change", () => {
         monaco.editor.setTheme(this.getTheme());
       });
-
-    const model = monaco.editor.createModel(
-      this.getCode() || "",
-      this.getLang()
-    );
-    this.editor.setModel(model);
-    this._editors[0].model = model;
-    this._editors[0].viewState = this.editor.saveViewState();
-    this._editors[0].tab = "1";
-  }
-
-  public switchTabs(currentTab: string, tab: string) {
-    // if the current tab is the same as the tab we're switching to, do nothing
-    if (currentTab === tab) return;
-
-    // if tab exists, overwrite it
-    // else create new tab
-    const tabCtx = this._editors.find((ctx) => ctx.tab === currentTab);
-
-    if (tabCtx?.tab) {
-      tabCtx.viewState = this.editor?.saveViewState();
-      tabCtx.model = this.editor?.getModel()!;
-      console.log("tabCtx", tabCtx);
-    } else {
-      this._editors.push({
-        tab: currentTab,
-        viewState: this.editor?.saveViewState(),
-        model: this.editor?.getModel()!,
-      });
-    }
-
-    // switch to tab
-    const newTabCtx = this._editors.find((ctx) => ctx.tab === tab);
-    console.log(newTabCtx);
-    this.editor?.restoreViewState(newTabCtx?.viewState || null);
-    this.editor?.setModel(
-      newTabCtx?.model || monaco.editor.createModel("", "")
-    );
   }
 }
 

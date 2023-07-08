@@ -26,7 +26,10 @@ func main() {
 	FileMenu.AddText("Open", keys.CmdOrCtrl("o"), func(_ *menu.CallbackData) {
 		println("Open")
 	})
-    FileMenu.AddSeparator()
+	FileMenu.AddText("Save", keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
+		println("Save")
+	})
+	FileMenu.AddSeparator()
     FileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
         runtime.Quit(app.ctx)
     })
