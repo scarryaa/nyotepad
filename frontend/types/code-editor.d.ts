@@ -3,6 +3,11 @@ import * as monaco from "monaco-editor";
 export declare class CodeEditor extends LitElement {
     private container;
     editor?: monaco.editor.IStandaloneCodeEditor;
+    _editors: {
+        tab: string;
+        viewState: monaco.editor.ICodeEditorViewState | undefined | null;
+        model: monaco.editor.ITextModel | undefined | null;
+    }[];
     theme?: string;
     language?: string;
     code?: string;
@@ -16,6 +21,7 @@ export declare class CodeEditor extends LitElement {
     setValue(value: string): void;
     getValue(): string;
     firstUpdated(): void;
+    switchTabs(currentTab: string, tab: string): void;
 }
 declare global {
     interface HTMLElementTagNameMap {

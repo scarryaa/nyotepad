@@ -20,6 +20,12 @@ func main() {
 
 	AppMenu := menu.NewMenu()
     FileMenu := AppMenu.AddSubmenu("File")
+	FileMenu.AddText("New", keys.CmdOrCtrl("n"), func(_ *menu.CallbackData) {
+		println("New")
+	})
+	FileMenu.AddText("Open", keys.CmdOrCtrl("o"), func(_ *menu.CallbackData) {
+		println("Open")
+	})
     FileMenu.AddSeparator()
     FileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
         runtime.Quit(app.ctx)
@@ -27,12 +33,15 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "nyaotepad",
+		Title:  "nyotepad",
 		Width:  1024,
 		Height: 768,
 		Menu: AppMenu,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
+		},
+		Debug: options.Debug{
+			OpenInspectorOnStartup: true,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,

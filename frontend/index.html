@@ -6,18 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lit Code Editor</title>
     <script type="module" src="/src/code-editor.ts"></script>
+    <script type="module" src="/src/tabs.ts"></script>
     <style>
       body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100vh;
+        overflow: hidden;
       }
     </style>
   </head>
   <body>
-    <app-tabs></app-tabs>
-    <code-editor>
-    </code-editor>
+    <app-tabs>
+    </app-tabs>
   </body>
 </html>
