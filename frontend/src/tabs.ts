@@ -24,7 +24,7 @@ class Tabs extends LitElement {
   _createNewTab(index: number): Tab {
     return {
       id: Math.random(),
-      name: `Tab ${index}`,
+      name: `Untitled-${index}`,
       model: monaco.editor.createModel("", ""),
     };
   }
@@ -35,15 +35,25 @@ class Tabs extends LitElement {
     if (tab) {
       this._editor.editor?.setModel(tab.model);
     }
+
+    this.shadowRoot?.querySelector(".tabs")?.scrollTo({
+      left: document.getElementById(id.toString())?.offsetLeft,
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   _closeTab(id: number): void {
     this.tabs = this.tabs.filter((tab) => tab.id !== id);
 
     // if we are on the tab we are closing, switch to the last tab
-    if (this._currentTab === id)
-      this._setActiveTab(this.tabs[this.tabs.length - 1].id);
-    // otherwise, do nothing
+    if (this._currentTab === id) {
+      if (this.tabs.length > 0) {
+        this._setActiveTab(this.tabs[this.tabs.length - 1].id);
+      } else {
+        this._editor.editor?.setModel(null);
+      }
+    }
   }
 
   _newTab(): void {
@@ -62,6 +72,66 @@ class Tabs extends LitElement {
         return tab;
       });
     });
+
+    // add drag and drop functionality to tabs
+    const tabs = this.shadowRoot?.querySelector(".tabs");
+    if (tabs) {
+      tabs.addEventListener("dragstart", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("tab")) {
+          e.dataTransfer?.setData("text/plain", target.id);
+        }
+      });
+
+      tabs.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("tab")) {
+          target.classList.add("dragover");
+        }
+      });
+
+      tabs.addEventListener("dragleave", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("tab")) {
+          target.classList.remove("dragover");
+        }
+      });
+
+      tabs.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("tab")) {
+          target.classList.remove("dragover");
+          const sourceId = e.dataTransfer?.getData("text/plain");
+          const targetId = target.id;
+          const targetIndex = this.tabs.findIndex(
+            (tab) => tab.id.toString() === targetId
+          );
+          const sourceIndex = this.tabs.findIndex(
+            (tab) => tab.id.toString() === sourceId
+          );
+          const sourceTab = this.tabs[sourceIndex];
+          const targetTab = this.tabs[targetIndex];
+          this.tabs[targetIndex] = sourceTab;
+          this.tabs[sourceIndex] = targetTab;
+          this.requestUpdate();
+        }
+      });
+
+      // prevent drag and drop of tab on editor
+      this.shadowRoot
+        ?.querySelector(".editor")
+        ?.addEventListener("dragover", (e) => {
+          e.preventDefault();
+        });
+
+      this.shadowRoot
+        ?.querySelector(".editor")
+        ?.addEventListener("drop", (e) => {
+          e.preventDefault();
+        });
+    }
   }
 
   render() {
@@ -73,6 +143,7 @@ class Tabs extends LitElement {
               id=${tab.id}
               class="tab ${this._currentTab === tab.id ? "active" : ""}"
               @click=${() => this._setActiveTab(tab.id)}
+              draggable="true"
             >
               ${tab.name}
 
@@ -107,12 +178,13 @@ class Tabs extends LitElement {
         user-select: none;
         width: calc(100% - 33px);
         overflow-x: scroll;
+        overflow-y: hidden;
       }
 
       .tab {
         padding: 10px;
         cursor: pointer;
-        min-width: 70px;
+        min-width: max-content;
         min-height: 20px;
         border-right: 1px solid #ccc;
         text-overflow: ellipsis;
@@ -154,15 +226,16 @@ class Tabs extends LitElement {
       }
 
       .close-tab {
-        display: none;
-        padding: 0 5px;
-        margin-left: 2px;
+        margin-left: 5px;
+        padding: 2px 5px;
+        display: inline-block;
+        visibility: hidden;
         cursor: pointer;
         user-select: none;
       }
 
       .tab:hover .close-tab {
-        display: inline-block;
+        visibility: visible !important;
       }
 
       .close-tab:hover {
@@ -172,6 +245,19 @@ class Tabs extends LitElement {
       .main {
         width: 100%;
         height: calc(100% - 40px);
+      }
+
+      code-editor {
+        width: 100%;
+        height: 100%;
+      }
+
+      .dragover {
+        background-color: #ddd;
+      }
+
+      .dragover .close-tab {
+        visibility: hidden;
       }
     `;
   }
