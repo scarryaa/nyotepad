@@ -1,6 +1,7 @@
 import * as monaco from "monaco-editor";
 
 export class Tab {
+  path: undefined | string;
   id: number;
   name: string;
   model: monaco.editor.ITextModel;

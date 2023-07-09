@@ -15,14 +15,15 @@ export class Tabs extends LitElement {
   }
 
   private _setupEvents() {
-    // capture fileopen event from Go
+    // capture fileopen event
     window.runtime.EventsOn("fileOpen", (e: any) => {
       // decode base64 string
       const decoded = JSON.parse(atob(e))[0];
       const newTab = this._tabService.createNewTab(
         this._tabService.getTabs().length + 1
       );
-      console.log(decoded.Name, decoded.Content);
+      console.log(decoded.Path, decoded.Name, decoded.Content);
+      newTab.path = decoded.Path;
       newTab.name = decoded.Name.split("/").pop() || "Untitled";
       newTab.model.setValue(decoded.Content);
       this._setCurrentTab(newTab.id);
@@ -31,17 +32,40 @@ export class Tabs extends LitElement {
     // capture saveAs event from Go
     window.runtime.EventsOn("saveAs", () => {
       // decode base64 string
-      var currTab = this._tabService.findTabByName(
-        this._tabService.getCurrentTab()?.toString() || "Untitled"
-      );
-      window.runtime.EventsEmit(
-        "saveAsResponse",
+      const currTab = this._tabService.getCurrentTab();
+
+      console.log(currTab?.name, currTab?.model.getValue());
+      window.runtime.EventsEmit("saveAsResponse", [
         new File(
-          currTab?.name || "Untitled",
+          currTab?.path || "",
           currTab?.name || "Untitled",
           currTab?.model.getValue() || ""
-        )
-      );
+        ),
+      ]);
+    });
+
+    // capture save event from Go
+    window.runtime.EventsOn("save", () => {
+      // decode base64 string
+      const currTab = this._tabService.getCurrentTab();
+
+      console.log(currTab?.name, currTab?.model.getValue());
+      window.runtime.EventsEmit("saveResponse", [
+        new File(
+          currTab?.path || "",
+          currTab?.name || "Untitled",
+          currTab?.model.getValue() || ""
+        ),
+      ]);
+    });
+
+    // capture save completed event from Go
+    window.runtime.EventsOn("fileSaved", (e: string) => {
+      // decode base64 string
+      const decoded = JSON.parse(atob(e))[0];
+      console.log(decoded.Path, decoded.Name, decoded.Content);
+      this._tabService.updateCurrentTab(decoded.Name, decoded.Path);
+      this.requestUpdate();
     });
 
     // add drag and drop functionality to tabs
@@ -77,8 +101,7 @@ export class Tabs extends LitElement {
           const id = (e as any).dataTransfer?.getData("text/plain");
           const targetTab = this._tabService.findTabById(parseInt(id));
           const draggedTab = this._tabService.findTabById(parseInt(target.id));
-          console.log(targetTab);
-          console.log(draggedTab);
+
           if (targetTab && draggedTab) {
             this._tabService.setTabs(
               this._tabService.getTabs().map((tab) => {

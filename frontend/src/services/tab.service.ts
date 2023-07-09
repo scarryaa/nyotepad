@@ -17,6 +17,7 @@ export class TabService extends Service {
 
   public createNewTab(id: number) {
     var tab: Tab = {
+      path: undefined,
       id: id,
       name: `Untitled-${id}`,
       model: CodeEditor.createModel("", ""),
@@ -46,7 +47,15 @@ export class TabService extends Service {
   // set tabs
   public setTabs(tabs: Tab[]) {
     this._tabs = tabs;
-    console.log(this._tabs);
+  }
+
+  // update current tab
+  public updateCurrentTab(name: string, path?: string) {
+    const currTab = this._tabs.find((tab) => tab.id === this._currentTab);
+    if (currTab) {
+      currTab.name = name;
+      currTab.path = path || currTab.path;
+    }
   }
 
   findTabByName(name: string): Tab | undefined {

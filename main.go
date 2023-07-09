@@ -12,8 +12,8 @@ import (
 
 	"io/ioutil"
 	"fmt"
-	"encoding/base64"
 	"encoding/json"
+	"strings"
 )
 
 //go:embed all:frontend/dist
@@ -63,6 +63,7 @@ func main() {
 
 			// Emit an event
 			var eventInfo = append([]interface{}{}, File{
+				Path: selection,
 				Name: selection,
 				Content: string(content),
 			})
@@ -74,63 +75,126 @@ func main() {
 	})
 
 	FileMenu.AddText("Save", keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
-		// err := ioutil.WriteFile("Untitled.txt", []byte("Hello, World!"), 0644)
+		// Create a channel to communicate the response
+		responseCh := make(chan []File, 1)
+
+		runtime.EventsOnce(app.ctx, "saveResponse", func(optionalData ...interface{}) {
+			files := processSaveAsResponse(optionalData...)
+			responseCh <- files 
+		})
+
+		runtime.EventsEmit(app.ctx, "save")
+
+		// Wait for the response
+		files := <-responseCh
+
+		if len(files) > 0 {
+			// get first file from the response
+			file := files[0]
+
+			// if path is empty, use save as
+			if file.Path == "" {
+				selection, err := runtime.SaveFileDialog(app.ctx, runtime.SaveDialogOptions{
+					Title: "Save File",
+					Filters: []runtime.FileFilter{
+						{
+							DisplayName: "All Files (*.*)",
+							Pattern: "*.*",
+						},
+					},
+					DefaultFilename: file.Name, // use file name from the response
+					// split the last '/' and use the first part as the default directory, if path is not empty
+					DefaultDirectory: strings.Join(strings.Split(file.Path, "/")[:len(strings.Split(file.Path, "/"))-1], "/"),
+				})
+				if err != nil {
+					println("Error:", err.Error())
+				}
+		
+				// If the user cancelled, selection will be empty
+				if selection != "" {
+					// Save the file
+					println("Saving file:", selection)
+					content := []byte(file.Content) // use file content from the response
+					err := ioutil.WriteFile(selection, content, 0644)
+					if err != nil {
+						fmt.Println("Error:", err)
+					} else {
+						fmt.Println("File saved successfully")
+					}
+				}
+			} else {
+				// Save the file
+				println("Saving file:", file.Path)
+				content := []byte(file.Content) // use file content from the response
+				err := ioutil.WriteFile(file.Path, content, 0644)
+				if err != nil {
+					fmt.Println("Error:", err)
+				} else {
+					fmt.Println("File saved successfully")
+				}
+			}
+		}
 	})
 
+
 	FileMenu.AddText("Save As", keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
+		// Create a channel to communicate the response
+		responseCh := make(chan []File, 1)
+	
+		runtime.EventsOnce(app.ctx, "saveAsResponse", func(optionalData ...interface{}) {
+			files := processSaveAsResponse(optionalData...)
+			responseCh <- files 
+		})
+	
 		runtime.EventsEmit(app.ctx, "saveAs")
 
-		runtime.EventsOnce(app.ctx, "saveAsResponse", func(optionalData ...interface{}) {
-			fmt.Println("saveAsResponse")
-			fmt.Println(optionalData[0])
-
-			jsonBytes, err := base64.StdEncoding.DecodeString(optionalData[0].(string))
-			if err != nil {
-				fmt.Println("error:", err)
-				return
-			}
-		
-			// JSON decode into File struct
-			var files []File
-			err = json.Unmarshal(jsonBytes, &files)
-			if err != nil {
-				fmt.Println("error:", err)
-				return
-			}
-		
-			for _, file := range files {
-				fmt.Printf("Decoded File: %+v\n", file)
-				fmt.Println(file.Name)
-				fmt.Println(file.Content)
-			}
-		})
-
-		selection, err := runtime.SaveFileDialog(app.ctx, runtime.SaveDialogOptions{
-			Title: "Save File",
-			Filters: []runtime.FileFilter{
-				{
-					DisplayName:     "All Files (*.*)",
-					Pattern: "*.*",
+		// Wait for the response
+		files := <-responseCh
+	
+		if len(files) > 0 {
+			// get first file from the response
+			file := files[0]
+			selection, err := runtime.SaveFileDialog(app.ctx, runtime.SaveDialogOptions{
+				Title: "Save File",
+				Filters: []runtime.FileFilter{
+					{
+						DisplayName: "All Files (*.*)",
+						Pattern: "*.*",
+					},
 				},
-			},
-			DefaultFilename: "Untitled.txt",
-		})
-		if err != nil {
-			println("Error:", err.Error())
-		}
-
-		// If the user cancelled, selection will be empty
-		if selection != "" {
-			runtime.EventsEmit(app.ctx, "info", "hello world")
-			// Save the file
-			println("Saving file:", selection)
-			content := []byte("Hello, World!")
-			err := ioutil.WriteFile(selection, content, 0644)
+				DefaultFilename: file.Name, // use file name from the response
+				// split the last '/' and use the first part as the default directory, if path is not empty
+				DefaultDirectory: strings.Join(strings.Split(file.Path, "/")[:len(strings.Split(file.Path, "/"))-1], "/"),
+			})
 			if err != nil {
-				fmt.Println("Error:", err)
+				println("Error:", err.Error())
+			}
+	
+			// If the user cancelled, selection will be empty
+			if selection != "" {
+				// Save the file
+				println("Saving file:", selection)
+				content := []byte(file.Content) // use file content from the response
+				err := ioutil.WriteFile(selection, content, 0644)
+				if err != nil {
+					fmt.Println("Error:", err)
+				} else {
+					fmt.Println("File saved successfully")
+
+					var fileInfo = append([]interface{}{}, File{
+						// get file path or if saving over an existing file, use the path from the response
+						Path: selection,
+						Name: strings.Split(selection, "/")[len(strings.Split(selection, "/"))-1],
+						Content: string(content),
+					})
+
+					jsonFileInfo, _ := json.Marshal(fileInfo)
+
+					// pass the filename to the frontend
+					runtime.EventsEmit(app.ctx, "fileSaved", jsonFileInfo)
+				}
 			}
 		}
-
 	})
 
 	FileMenu.AddSeparator()
@@ -161,3 +225,31 @@ func main() {
 		println("Error:", err.Error())
 	}
 }
+
+func processSaveAsResponse(optionalData ...interface{}) []File {
+	fmt.Println("saveAsResponse")
+	fmt.Println(optionalData[0])
+
+	// Convert to JSON
+	jsonBytes, err := json.Marshal(optionalData[0])
+	if err != nil {
+		fmt.Println("error:", err)
+		return nil
+	}
+	
+	// JSON decode into File struct
+	var files []File
+	err = json.Unmarshal(jsonBytes, &files)
+	if err != nil {
+		fmt.Println("error:", err)
+		return nil
+	}
+
+	for _, file := range files {
+		fmt.Printf("Decoded File: %+v\n", file)
+		fmt.Println(file.Name)
+		fmt.Println(file.Content)
+	}
+	return files
+}
+

@@ -14,7 +14,7 @@ export class File {
     return new File(path, name, content);
   }
 
-  toJSON(): string {
+  static toJSON(): string {
     return JSON.stringify(this);
   }
 }

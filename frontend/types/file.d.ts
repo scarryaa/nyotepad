@@ -4,5 +4,5 @@ export declare class File {
     content: string;
     constructor(path: string, name: string, content: string);
     static fromJSON(json: string): File;
-    toJSON(): string;
+    static toJSON(): string;
 }
