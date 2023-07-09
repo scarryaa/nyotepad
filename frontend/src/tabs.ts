@@ -75,8 +75,6 @@ export class Tabs extends LitElement {
         if (target.classList.contains("tab")) {
           target.classList.remove("dragover");
           const id = (e as any).dataTransfer?.getData("text/plain");
-          console.log(id);
-          console.log(target.id);
           const targetTab = this._tabService.findTabById(parseInt(id));
           const draggedTab = this._tabService.findTabById(parseInt(target.id));
           console.log(targetTab);
@@ -97,6 +95,25 @@ export class Tabs extends LitElement {
         }
         this.requestUpdate();
       });
+    }
+  }
+
+  private _handleClick(e: any): void {
+    // middle click to close tab
+    const target = e.target as HTMLElement;
+    e.preventDefault();
+    if (e.button === 1) {
+      this._closeTab(parseInt(target?.id || ""));
+      return;
+    }
+
+    // left click to switch tab
+    if (target.classList.contains("tab")) {
+      this._setCurrentTab(parseInt(target.id));
+    } else if (target.classList.contains("close-tab")) {
+      this._closeTab(parseInt(target?.id || ""));
+    } else if (target.classList.contains("new-tab")) {
+      this._newTab();
     }
   }
 
@@ -150,17 +167,14 @@ export class Tabs extends LitElement {
               class="tab ${this._tabService.getCurrentTab()?.id === tab.id
                 ? "active"
                 : ""}"
-              @click=${() => this._setCurrentTab(tab.id)}
+              @click=${(e: MouseEvent) => this._handleClick(e)}
               draggable="true"
             >
               ${tab.name}
 
               <div
                 class="close-tab"
-                @click=${(e: Event) => {
-                  e.stopPropagation(); // prevent tab from activating when close button is clicked
-                  this._closeTab(tab.id);
-                }}
+                @click=${(e: MouseEvent) => this._handleClick(e)}
               >
                 x
               </div>
