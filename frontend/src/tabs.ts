@@ -122,21 +122,19 @@ export class Tabs extends LitElement {
   }
 
   private _handleClick(e: any): void {
-    // middle click to close tab
     const target = e.target as HTMLElement;
     e.preventDefault();
-    if (e.button === 1) {
+    // left click to switch tab
+    if (e.button === 0 && !target.classList.contains("close-tab")) {
+      this._setCurrentTab(parseInt(target?.id || ""));
+      return;
+      // middle click to close tab
+    } else if (e.button === 1) {
       this._closeTab(parseInt(target?.id || ""));
       return;
-    }
-
-    // left click to switch tab
-    if (target.classList.contains("tab")) {
-      this._setCurrentTab(parseInt(target.id));
-    } else if (target.classList.contains("close-tab")) {
-      this._closeTab(parseInt(target?.id || ""));
-    } else if (target.classList.contains("new-tab")) {
-      this._newTab();
+      // right click to do nothing
+    } else if (e.button === 2) {
+      return;
     }
   }
 
@@ -195,10 +193,7 @@ export class Tabs extends LitElement {
             >
               ${tab.name}
 
-              <div
-                class="close-tab"
-                @click=${(e: MouseEvent) => this._handleClick(e)}
-              >
+              <div class="close-tab" @click=${() => this._closeTab(tab.id)}>
                 x
               </div>
             </div>
@@ -230,7 +225,7 @@ export class Tabs extends LitElement {
         border-bottom: 1px solid #ccc;
         user-select: none;
         width: calc(100% - 33px);
-        overflow-x: scroll;
+        overflow-x: auto;
         overflow-y: hidden;
       }
 
