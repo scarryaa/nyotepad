@@ -3,6 +3,7 @@ import { customElement, property } from "lit/decorators.js";
 
 import { TabService } from "./services/tab.service";
 import { CodeEditor } from "./code-editor";
+import { File } from "./file";
 
 @customElement("app-tabs")
 export class Tabs extends LitElement {
@@ -11,31 +12,92 @@ export class Tabs extends LitElement {
 
   constructor() {
     super();
+  }
 
-    // // capture fileopen event from Go
-    // window.runtime.EventsOn("fileOpen", (e: any) => {
-    //   // decode base64 string
-    //   const decoded = JSON.parse(atob(e))[0];
-    //   const newTab = this._tabService.createNewTab(this.tabs.length + 1);
-    //   console.log(decoded.Name, decoded.Content);
-    //   newTab.name = decoded.Name.split("/").pop() || "Untitled";
-    //   newTab.model.setValue(decoded.Content);
-    //   this._setActiveTab(newTab.id);
-    // });
+  private _setupEvents() {
+    // capture fileopen event from Go
+    window.runtime.EventsOn("fileOpen", (e: any) => {
+      // decode base64 string
+      const decoded = JSON.parse(atob(e))[0];
+      const newTab = this._tabService.createNewTab(
+        this._tabService.getTabs().length + 1
+      );
+      console.log(decoded.Name, decoded.Content);
+      newTab.name = decoded.Name.split("/").pop() || "Untitled";
+      newTab.model.setValue(decoded.Content);
+      this._setCurrentTab(newTab.id);
+    });
 
-    // // capture saveAs event from Go
-    // window.runtime.EventsOn("saveAs", () => {
-    //   // decode base64 string
-    //   var currTab = this._tabService.findTabByName(this._currentTab.toString());
-    //   window.runtime.EventsEmit(
-    //     "saveAsResponse",
-    //     new File(
-    //       currTab?.name || "Untitled",
-    //       currTab?.name || "Untitled",
-    //       currTab?.model.getValue() || ""
-    //     )
-    //   );
-    // });
+    // capture saveAs event from Go
+    window.runtime.EventsOn("saveAs", () => {
+      // decode base64 string
+      var currTab = this._tabService.findTabByName(
+        this._tabService.getCurrentTab()?.toString() || "Untitled"
+      );
+      window.runtime.EventsEmit(
+        "saveAsResponse",
+        new File(
+          currTab?.name || "Untitled",
+          currTab?.name || "Untitled",
+          currTab?.model.getValue() || ""
+        )
+      );
+    });
+
+    // add drag and drop functionality to tabs
+    const tabs = this.shadowRoot?.querySelector(".tabs");
+    if (tabs) {
+      tabs.addEventListener("dragstart", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("tab")) {
+          (e as any).dataTransfer?.setData("text/plain", target.id);
+        }
+      });
+
+      tabs.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("tab")) {
+          target.classList.add("dragover");
+        }
+      });
+
+      tabs.addEventListener("dragleave", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("tab")) {
+          target.classList.remove("dragover");
+        }
+      });
+
+      tabs.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const target = e.target as HTMLElement;
+        if (target.classList.contains("tab")) {
+          target.classList.remove("dragover");
+          const id = (e as any).dataTransfer?.getData("text/plain");
+          console.log(id);
+          console.log(target.id);
+          const targetTab = this._tabService.findTabById(parseInt(id));
+          const draggedTab = this._tabService.findTabById(parseInt(target.id));
+          console.log(targetTab);
+          console.log(draggedTab);
+          if (targetTab && draggedTab) {
+            this._tabService.setTabs(
+              this._tabService.getTabs().map((tab) => {
+                if (tab.id === targetTab.id) {
+                  return draggedTab;
+                } else if (tab.id === draggedTab.id) {
+                  return targetTab;
+                } else {
+                  return tab;
+                }
+              })
+            );
+          }
+        }
+        this.requestUpdate();
+      });
+    }
   }
 
   private _setCurrentTab(id: number): void {
@@ -75,52 +137,7 @@ export class Tabs extends LitElement {
 
   firstUpdated() {
     this._editor = this.shadowRoot?.querySelector("code-editor") as CodeEditor;
-    // add drag and drop functionality to tabs
-    // const tabs = this.shadowRoot?.querySelector(".tabs");
-    // if (tabs) {
-    //   tabs.addEventListener("dragstart", (e) => {
-    //     const target = e.target as HTMLElement;
-    //     if (target.classList.contains("tab")) {
-    //       (e as any).dataTransfer?.setData("text/plain", target.id);
-    //     }
-    //   });
-
-    //   tabs.addEventListener("dragover", (e) => {
-    //     e.preventDefault();
-    //     const target = e.target as HTMLElement;
-    //     if (target.classList.contains("tab")) {
-    //       target.classList.add("dragover");
-    //     }
-    //   });
-
-    //   tabs.addEventListener("dragleave", (e) => {
-    //     const target = e.target as HTMLElement;
-    //     if (target.classList.contains("tab")) {
-    //       target.classList.remove("dragover");
-    //     }
-    //   });
-
-    //   tabs.addEventListener("drop", (e) => {
-    //     e.preventDefault();
-    //     const target = e.target as HTMLElement;
-    //     if (target.classList.contains("tab")) {
-    //       target.classList.remove("dragover");
-    //       const sourceId = (e as any).dataTransfer?.getData("text/plain");
-    //       const targetId = target.id;
-    //       const targetIndex = this.tabs.findIndex(
-    //         (tab) => tab.id.toString() === targetId
-    //       );
-    //       const sourceIndex = this.tabs.findIndex(
-    //         (tab) => tab.id.toString() === sourceId
-    //       );
-    //       const sourceTab = this.tabs[sourceIndex];
-    //       const targetTab = this.tabs[targetIndex];
-    //       this.tabs[targetIndex] = sourceTab;
-    //       this.tabs[sourceIndex] = targetTab;
-    //       this.requestUpdate();
-    //     }
-    //   });
-    // }
+    this._setupEvents();
   }
 
   render() {

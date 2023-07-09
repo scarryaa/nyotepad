@@ -16,6 +16,7 @@ export declare class CodeEditor extends LitElement {
     setValue(value: string): void;
     getValue(): string;
     firstUpdated(): void;
+    static createModel(value: string, language: string): monaco.editor.ITextModel;
 }
 declare global {
     interface HTMLElementTagNameMap {

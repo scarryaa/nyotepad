@@ -1,7 +1,7 @@
 import { CodeEditor } from "../code-editor";
 import { Service } from "./service";
 import { Tab } from "../models/tab";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 
 @customElement("tab-service")
 export class TabService extends Service {
@@ -15,9 +15,9 @@ export class TabService extends Service {
     this._tabs = [];
   }
 
-  createNewTab(id: number) {
+  public createNewTab(id: number) {
     var tab: Tab = {
-      id: Math.random(),
+      id: id,
       name: `Untitled-${id}`,
       model: CodeEditor.createModel("", ""),
     };
@@ -29,18 +29,24 @@ export class TabService extends Service {
   }
 
   // get current tab
-  getCurrentTab() {
+  public getCurrentTab() {
     return this._tabs.find((tab) => tab.id === this._currentTab);
   }
 
   // set current tab
-  setCurrentTab(tabId: number) {
+  public setCurrentTab(tabId: number) {
     this._currentTab = tabId;
   }
 
   // get tabs
-  getTabs() {
+  public getTabs() {
     return this._tabs;
+  }
+
+  // set tabs
+  public setTabs(tabs: Tab[]) {
+    this._tabs = tabs;
+    console.log(this._tabs);
   }
 
   findTabByName(name: string): Tab | undefined {
