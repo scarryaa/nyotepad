@@ -14,7 +14,7 @@ export class Tabs extends LitElement {
     super();
   }
 
-  private _setupEvents() {
+  private _setUpEvents() {
     // capture fileopen event
     window.runtime.EventsOn("fileOpen", (e: any) => {
       // decode base64 string
@@ -226,7 +226,7 @@ export class Tabs extends LitElement {
 
   firstUpdated() {
     this._editor = this.shadowRoot?.querySelector("code-editor") as CodeEditor;
-    this._setupEvents();
+    this._setUpEvents();
   }
 
   render() {

@@ -38,10 +38,15 @@ export class CodeEditor extends LitElement {
   @property() language?: string;
   @property() code?: string;
 
+  constructor() {
+    super();
+    this.setUpEvents();
+  }
+
   static styles = css`
     :host {
       --editor-width: 100%;
-      --editor-height: 100vh;
+      --editor-height: 100%;
     }
     main {
       width: var(--editor-width);
@@ -91,11 +96,11 @@ export class CodeEditor extends LitElement {
     );
   }
 
-  setValue(value: string) {
+  public setValue(value: string) {
     this.editor!.setValue(value);
   }
 
-  getValue() {
+  public getValue() {
     const value = this.editor!.getValue();
     return value;
   }
@@ -117,6 +122,43 @@ export class CodeEditor extends LitElement {
 
   static createModel(value: string, language: string) {
     return monaco.editor.createModel(value, language);
+  }
+
+  private setUpEvents() {
+    // capture undo event from go
+    window.runtime.EventsOn("undo", () => {
+      this.editor?.trigger("keyboard", "undo", null);
+    });
+
+    // capture redo event from go
+    window.runtime.EventsOn("redo", () => {
+      this.editor?.trigger("keyboard", "redo", null);
+    });
+
+    // capture cut event from go
+    window.runtime.EventsOn("cut", () => {
+      this.editor?.trigger("keyboard", "cut", null);
+    });
+
+    // capture copy event from go
+    window.runtime.EventsOn("copy", () => {
+      this.editor?.trigger("source", "editor.action.clipboardCopyAction", null);
+    });
+
+    // capture paste event from go
+    window.runtime.EventsOn("paste", () => {
+      this.editor?.trigger(
+        "source",
+        "editor.action.clipboardPasteAction",
+        null
+      );
+    });
+
+    // capture select all event from go
+    window.runtime.EventsOn("selectAll", () => {
+      const range = this.editor?.getModel()?.getFullModelRange()!;
+      this.editor?.setSelection(range);
+    });
   }
 }
 

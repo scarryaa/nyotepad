@@ -26,12 +26,11 @@ type File struct {
 	Content string
 }
 
-func main() {
-	// Create an instance of the app structure
-	app := NewApp()
-
+func setUpMenu(app *App) *menu.Menu {
 	AppMenu := menu.NewMenu()
-    FileMenu := AppMenu.AddSubmenu("File")
+
+	// File Menu
+	FileMenu := AppMenu.AddSubmenu("File")
 
 	FileMenu.AddText("New", keys.CmdOrCtrl("n"), func(_ *menu.CallbackData) {
 		// Emit an event
@@ -211,6 +210,58 @@ func main() {
     FileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
         runtime.Quit(app.ctx)
     })
+
+	// End File Menu
+
+	// Edit Menu
+
+	EditMenu := AppMenu.AddSubmenu("Edit")
+
+	EditMenu.AddText("Undo", keys.CmdOrCtrl("z"), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "undo")
+	})
+
+	EditMenu.AddText("Redo", keys.CmdOrCtrl("y"), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "redo")
+	})
+
+	EditMenu.AddSeparator()
+
+	EditMenu.AddText("Cut", keys.CmdOrCtrl("x"), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "cut")
+	})
+
+	EditMenu.AddText("Copy", keys.CmdOrCtrl("c"), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "copy")
+	})
+
+	EditMenu.AddText("Paste", keys.CmdOrCtrl("v"), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "paste")
+	})
+
+	EditMenu.AddText("Select All", keys.CmdOrCtrl("a"), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "selectAll")
+	})
+
+	// End Edit Menu
+
+	// Help Menu
+
+	HelpMenu := AppMenu.AddSubmenu("Help")
+
+	HelpMenu.AddText("About", keys.CmdOrCtrl("h"), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "about")
+	})
+
+	// End Help Menu
+
+	return AppMenu
+}
+
+func main() {
+	// Create an instance of the app structure
+	app := NewApp()
+	AppMenu := setUpMenu(app)
 
 	// Create application with options
 	err := wails.Run(&options.App{

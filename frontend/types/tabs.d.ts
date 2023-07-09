@@ -3,7 +3,7 @@ export declare class Tabs extends LitElement {
     private _tabService;
     private _editor;
     constructor();
-    private _setupEvents;
+    private _setUpEvents;
     private _handleClick;
     private _setCurrentTab;
     private _closeTab;

@@ -5,7 +5,7 @@ export declare class TabService extends Service {
     private _currentTab?;
     name: string;
     constructor();
-    createNewTab(id: number): Tab;
+    createNewTab(): Tab;
     getCurrentTab(): Tab | undefined;
     setCurrentTab(tabId: number): void;
     getTabs(): Tab[];

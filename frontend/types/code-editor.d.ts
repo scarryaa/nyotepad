@@ -6,6 +6,7 @@ export declare class CodeEditor extends LitElement {
     theme?: string;
     language?: string;
     code?: string;
+    constructor();
     static styles: import("lit").CSSResult;
     render(): import("lit-html").TemplateResult<1>;
     private getFile;
@@ -17,6 +18,7 @@ export declare class CodeEditor extends LitElement {
     getValue(): string;
     firstUpdated(): void;
     static createModel(value: string, language: string): monaco.editor.ITextModel;
+    private setUpEvents;
 }
 declare global {
     interface HTMLElementTagNameMap {
