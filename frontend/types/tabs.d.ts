@@ -11,6 +11,8 @@ declare class Tabs extends LitElement {
     constructor();
     _currentTab: number;
     tabs: Tab[];
+    findTabByName(name: string): Tab | undefined;
+    findTabById(id: number): Tab | undefined;
     _createNewTab(index: number): Tab;
     _setActiveTab(id: number): void;
     _closeTab(id: number): void;
@@ -20,6 +22,9 @@ declare class Tabs extends LitElement {
     static get styles(): import("lit").CSSResult;
 }
 declare global {
+    interface Window {
+        runtime: any;
+    }
     interface HTMLElementTagNameMap {
         "app-tabs": Tabs;
     }

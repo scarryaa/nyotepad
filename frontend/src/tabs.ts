@@ -3,6 +3,7 @@ import { customElement, property } from "lit/decorators.js";
 import { CodeEditor } from "./code-editor";
 
 import * as monaco from "monaco-editor";
+import { File } from "./file";
 
 interface Tab {
   id: number;
@@ -16,10 +17,44 @@ class Tabs extends LitElement {
 
   constructor() {
     super();
+
+    // capture fileopen event from Go
+    window.runtime.EventsOn("fileOpen", (e: any) => {
+      // decode base64 string
+      const decoded = JSON.parse(atob(e))[0];
+      const newTab = this._createNewTab(this.tabs.length + 1);
+      console.log(decoded.Name, decoded.Content);
+      newTab.name = decoded.Name.split("/").pop() || "Untitled";
+      newTab.model.setValue(decoded.Content);
+      this.tabs = [...this.tabs, newTab];
+      this._setActiveTab(newTab.id);
+    });
+
+    // capture saveAs event from Go
+    window.runtime.EventsOn("saveAs", () => {
+      // decode base64 string
+      var currTab = this.findTabByName(this._currentTab.toString());
+      window.runtime.EventsEmit(
+        "saveAsResponse",
+        new File(
+          currTab?.name || "Untitled",
+          currTab?.name || "Untitled",
+          currTab?.model.getValue() || ""
+        )
+      );
+    });
   }
 
   @property({ type: Number }) _currentTab: number = 0;
   @property({ type: Array }) tabs: Tab[] = [];
+
+  findTabByName(name: string): Tab | undefined {
+    return this.tabs.find((tab) => tab.name === name);
+  }
+
+  findTabById(id: number): Tab | undefined {
+    return this.tabs.find((tab) => tab.id === id);
+  }
 
   _createNewTab(index: number): Tab {
     return {
@@ -79,7 +114,7 @@ class Tabs extends LitElement {
       tabs.addEventListener("dragstart", (e) => {
         const target = e.target as HTMLElement;
         if (target.classList.contains("tab")) {
-          e.dataTransfer?.setData("text/plain", target.id);
+          (e as any).dataTransfer?.setData("text/plain", target.id);
         }
       });
 
@@ -103,7 +138,7 @@ class Tabs extends LitElement {
         const target = e.target as HTMLElement;
         if (target.classList.contains("tab")) {
           target.classList.remove("dragover");
-          const sourceId = e.dataTransfer?.getData("text/plain");
+          const sourceId = (e as any).dataTransfer?.getData("text/plain");
           const targetId = target.id;
           const targetIndex = this.tabs.findIndex(
             (tab) => tab.id.toString() === targetId
@@ -118,19 +153,6 @@ class Tabs extends LitElement {
           this.requestUpdate();
         }
       });
-
-      // prevent drag and drop of tab on editor
-      this.shadowRoot
-        ?.querySelector(".editor")
-        ?.addEventListener("dragover", (e) => {
-          e.preventDefault();
-        });
-
-      this.shadowRoot
-        ?.querySelector(".editor")
-        ?.addEventListener("drop", (e) => {
-          e.preventDefault();
-        });
     }
   }
 
@@ -168,6 +190,13 @@ class Tabs extends LitElement {
   }
   static get styles() {
     return css`
+      .main {
+        height: calc(100% - 40px);
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+      }
+
       .tabs {
         display: flex;
         flex-direction: row;
@@ -243,8 +272,9 @@ class Tabs extends LitElement {
       }
 
       .main {
-        width: 100%;
         height: calc(100% - 40px);
+        display: flex;
+        flex-direction: row;
       }
 
       code-editor {
@@ -264,6 +294,10 @@ class Tabs extends LitElement {
 }
 
 declare global {
+  interface Window {
+    runtime: any;
+  }
+
   interface HTMLElementTagNameMap {
     "app-tabs": Tabs;
   }
