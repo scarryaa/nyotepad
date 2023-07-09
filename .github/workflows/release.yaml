@@ -19,6 +19,7 @@ jobs:
     - name: Install dependencies
       run: |
         go install github.com/wailsapp/wails/v2/cmd/wails@latest
+        yarn
 
     - name: Build Wails for macOS, Windows, Linux
       run: |
