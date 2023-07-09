@@ -12,6 +12,7 @@
     "dist",
     "types"
   ],
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build"
