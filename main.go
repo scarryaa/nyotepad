@@ -34,7 +34,8 @@ func main() {
     FileMenu := AppMenu.AddSubmenu("File")
 
 	FileMenu.AddText("New", keys.CmdOrCtrl("n"), func(_ *menu.CallbackData) {
-		println("New")
+		// Emit an event
+		runtime.EventsEmit(app.ctx, "new")
 	})
 
 	FileMenu.AddText("Open", keys.CmdOrCtrl("o"), func(_ *menu.CallbackData) {
@@ -73,6 +74,8 @@ func main() {
 			runtime.EventsEmit(app.ctx, "fileOpen", myJson)
 		}
 	})
+
+	FileMenu.AddSeparator()
 
 	FileMenu.AddText("Save", keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
 		// Create a channel to communicate the response
@@ -198,6 +201,13 @@ func main() {
 	})
 
 	FileMenu.AddSeparator()
+
+	FileMenu.AddText("Close", keys.CmdOrCtrl("w"), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "close")
+	})
+
+	FileMenu.AddSeparator()
+
     FileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
         runtime.Quit(app.ctx)
     })

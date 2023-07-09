@@ -59,6 +59,19 @@ export class Tabs extends LitElement {
       ]);
     });
 
+    // capture new event from Go
+    window.runtime.EventsOn("new", () => {
+      this._newTab();
+    });
+
+    // capture close event from Go
+    window.runtime.EventsOn("close", () => {
+      const currTab = this._tabService.getCurrentTab();
+      if (currTab) {
+        this._closeTab(currTab.id);
+      }
+    });
+
     // capture save completed event from Go
     window.runtime.EventsOn("fileSaved", (e: string) => {
       // decode base64 string
@@ -225,7 +238,7 @@ export class Tabs extends LitElement {
         border-bottom: 1px solid #ccc;
         user-select: none;
         width: calc(100% - 33px);
-        overflow-x: auto;
+        overflow-x: overlay;
         overflow-y: hidden;
       }
 
@@ -234,6 +247,7 @@ export class Tabs extends LitElement {
         cursor: pointer;
         min-width: max-content;
         min-height: 20px;
+        max-height: 20px;
         border-right: 1px solid #ccc;
         text-overflow: ellipsis;
         overflow: hidden;
@@ -271,6 +285,7 @@ export class Tabs extends LitElement {
         border-bottom: 1px solid #ccc;
         border-left: 1px solid #ccc;
         height: 20px;
+        max-height: 20px;
       }
 
       .close-tab {
