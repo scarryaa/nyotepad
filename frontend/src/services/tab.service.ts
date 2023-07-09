@@ -15,7 +15,12 @@ export class TabService extends Service {
     this._tabs = [];
   }
 
-  public createNewTab(id: number) {
+  public createNewTab() {
+    let id = 1;
+    while (this._tabs.find((tab) => tab.id === id)) {
+      id++;
+    }
+
     var tab: Tab = {
       path: undefined,
       id: id,

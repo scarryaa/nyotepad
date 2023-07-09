@@ -19,9 +19,7 @@ export class Tabs extends LitElement {
     window.runtime.EventsOn("fileOpen", (e: any) => {
       // decode base64 string
       const decoded = JSON.parse(atob(e))[0];
-      const newTab = this._tabService.createNewTab(
-        this._tabService.getTabs().length + 1
-      );
+      const newTab = this._tabService.createNewTab();
       console.log(decoded.Path, decoded.Name, decoded.Content);
       newTab.path = decoded.Path;
       newTab.name = decoded.Name.split("/").pop() || "Untitled";
@@ -178,9 +176,7 @@ export class Tabs extends LitElement {
   }
 
   private _newTab(): void {
-    const newTab = this._tabService.createNewTab(
-      this._tabService.getTabs().length + 1
-    );
+    const newTab = this._tabService.createNewTab();
     this._setCurrentTab(newTab.id);
 
     this.requestUpdate();
