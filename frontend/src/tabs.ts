@@ -82,6 +82,28 @@ export class Tabs extends LitElement {
     // add drag and drop functionality to tabs
     const tabs = this.shadowRoot?.querySelector(".tabs");
     if (tabs) {
+      // listen to mouse wheel event and update scrollbar
+      tabs.addEventListener("wheel", (e: any) => {
+        // if shift key is pressed, change tab
+        if (e.shiftKey) {
+          // if scrolling down, go to next tab
+          if (e.deltaY > 0) {
+            this._tabService.setCurrentTab(
+              this._tabService.getCurrentTab()?.id || 0 + 1
+            );
+          } else {
+            this._tabService.setCurrentTab(
+              this._tabService.getCurrentTab()?.id || 0 - 1
+            );
+          }
+        }
+
+        const tabs = this.shadowRoot?.querySelector(".tabs");
+        if (tabs) {
+          tabs.scrollLeft += e.deltaY;
+        }
+      });
+
       tabs.addEventListener("dragstart", (e) => {
         const target = e.target as HTMLElement;
         if (target.classList.contains("tab")) {
@@ -152,13 +174,19 @@ export class Tabs extends LitElement {
   private _setCurrentTab(id: number): void {
     this._tabService.setCurrentTab(id);
     this._editor.editor?.setModel(this._tabService.getCurrentTab()?.model!);
-    this.shadowRoot?.querySelector(".tabs")?.scrollTo({
-      left: document.getElementById(id.toString())?.offsetLeft,
-      top: 0,
-      behavior: "smooth",
-    });
 
     this.requestUpdate();
+
+    // scroll to the current tab
+    const tabs = this.shadowRoot?.querySelector(".tabs");
+    if (tabs) {
+      const currentTab = this.shadowRoot?.querySelector(
+        `.tab-${this._tabService.getCurrentTab()?.id}`
+      );
+      if (currentTab) {
+        tabs.scrollLeft = (currentTab as HTMLElement).offsetLeft;
+      }
+    }
   }
 
   private _closeTab(id: number): void {
@@ -180,6 +208,20 @@ export class Tabs extends LitElement {
     this._setCurrentTab(newTab.id);
 
     this.requestUpdate();
+
+    // scroll to the new tab
+    const tabs = this.shadowRoot?.querySelector(".tabs");
+    if (tabs) {
+      setTimeout(
+        () =>
+          (tabs.scrollLeft = (
+            this.shadowRoot?.querySelector(
+              `.tab-${this._tabService.getCurrentTab()?.id}`
+            ) as HTMLElement
+          ).offsetLeft),
+        0
+      );
+    }
   }
 
   firstUpdated() {
@@ -193,8 +235,9 @@ export class Tabs extends LitElement {
         ${this._tabService.getTabs().map(
           (tab) => html`
             <div
-              id=${tab.id}
-              class="tab ${this._tabService.getCurrentTab()?.id === tab.id
+              id="${tab.id}"
+              class="tab tab-${tab.id} ${this._tabService.getCurrentTab()
+                ?.id === tab.id
                 ? "active"
                 : ""}"
               @click=${(e: MouseEvent) => this._handleClick(e)}
