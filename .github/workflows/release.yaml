@@ -19,16 +19,19 @@ jobs:
               sudo apt-get install -y build-essential libgtk-3-dev
               sudo apt-get install -y libappindicator3-dev
               go install github.com/wailsapp/wails/v2/cmd/wails@latest
+              yarn
               wails build -platform linux/amd64 -o ./build/nyotepad-linux
           - os: windows-latest
             asset_name: nyotepad-win
             build_command: |
               go install github.com/wailsapp/wails/v2/cmd/wails@latest
+              yarn
               wails build -platform windows/amd64 -o ./build/nyotepad-win
           - os: macos-latest
             asset_name: nyotepad-mac
             build_command: |
               go install github.com/wailsapp/wails/v2/cmd/wails@latest
+              yarn
               wails build -platform darwin/amd64 -o ./build/nyotepad-mac
     runs-on: ${{ matrix.os }}
     steps:
