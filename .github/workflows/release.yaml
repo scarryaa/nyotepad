@@ -10,25 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v2
-      with:
-        go-version: ^1.15
+    - name: Set up Go
+      uses: actions/setup-go@v4
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install dependencies
       run: |
-        go get github.com/wailsapp/wails/cmd/wails
-        sudo apt-get install libwebkit2gtk-4.0-dev
-        sudo apt-get install libappindicator3-dev
+        go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
     - name: Build Wails for macOS, Windows, Linux
       run: |
-        wails build -p -x darwin/amd64 -o ./build/nyotepad-mac
-        wails build -p -x windows/amd64 -o ./build/nyotepad-win
-        wails build -p -x linux/amd64 -o ./build/nyotepad-linux
+        wails build -platform darwin/amd64 -o ./build/nyotepad-mac
+        wails build -platform windows/amd64 -o ./build/nyotepad-win
+        wails build -platform linux/amd64 -o ./build/nyotepad-linux
 
     - name: Create Release
       id: create_release
@@ -39,7 +35,7 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
         draft: false
-        prerelease: false
+        prerelease: true
 
     - name: Upload Release Asset - Mac
       id: upload-release-asset-mac
