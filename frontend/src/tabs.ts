@@ -207,6 +207,7 @@ export class Tabs extends LitElement {
     const newTab = this._tabService.createNewTab();
     this._setCurrentTab(newTab.id);
 
+    this._editor.focus();
     this.requestUpdate();
 
     // scroll to the new tab

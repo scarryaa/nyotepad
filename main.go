@@ -104,7 +104,7 @@ func setUpMenu(app *App) *menu.Menu {
 							Pattern: "*.*",
 						},
 					},
-					DefaultFilename: file.Name, // use file name from the response
+					DefaultFilename: file.Name + ".txt", // use file name from the response
 					// split the last '/' and use the first part as the default directory, if path is not empty
 					DefaultDirectory: strings.Join(strings.Split(file.Path, "/")[:len(strings.Split(file.Path, "/"))-1], "/"),
 				})
@@ -201,7 +201,7 @@ func setUpMenu(app *App) *menu.Menu {
 
 	FileMenu.AddSeparator()
 
-	FileMenu.AddText("Close", keys.CmdOrCtrl("w"), func(_ *menu.CallbackData) {
+	FileMenu.AddText("Close Tab", keys.CmdOrCtrl("w"), func(_ *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "close")
 	})
 
@@ -250,7 +250,21 @@ func setUpMenu(app *App) *menu.Menu {
 	HelpMenu := AppMenu.AddSubmenu("Help")
 
 	HelpMenu.AddText("About", keys.CmdOrCtrl("h"), func(_ *menu.CallbackData) {
-		runtime.EventsEmit(app.ctx, "about")
+		selection, err := runtime.MessageDialog(app.ctx, runtime.MessageDialogOptions{
+			Title:        "nyotepad - About",
+			Message:      "nyotepad is a simple text editor built with Wails and Lit.\n \nVersion: 0.1.0 \n github.com/scarryaa",
+			Buttons:      []string{"one", "two", "three", "four"},
+		})
+
+		if err != nil {
+			println("Error:", err.Error())
+		}
+
+		// If the user cancelled, selection will be empty
+		if selection != "" {
+			println("Selected:", selection)
+		}
+
 	})
 
 	// End Help Menu
