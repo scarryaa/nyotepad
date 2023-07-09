@@ -1,170 +1,139 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
+
+import { TabService } from "./services/tab.service";
 import { CodeEditor } from "./code-editor";
 
-import * as monaco from "monaco-editor";
-import { File } from "./file";
-
-interface Tab {
-  id: number;
-  name: string;
-  model: monaco.editor.ITextModel;
-}
-
 @customElement("app-tabs")
-class Tabs extends LitElement {
-  _editor!: CodeEditor;
+export class Tabs extends LitElement {
+  @property({ type: Object }) private _tabService!: TabService;
+  private _editor!: CodeEditor;
 
   constructor() {
     super();
 
-    // capture fileopen event from Go
-    window.runtime.EventsOn("fileOpen", (e: any) => {
-      // decode base64 string
-      const decoded = JSON.parse(atob(e))[0];
-      const newTab = this._createNewTab(this.tabs.length + 1);
-      console.log(decoded.Name, decoded.Content);
-      newTab.name = decoded.Name.split("/").pop() || "Untitled";
-      newTab.model.setValue(decoded.Content);
-      this.tabs = [...this.tabs, newTab];
-      this._setActiveTab(newTab.id);
-    });
+    // // capture fileopen event from Go
+    // window.runtime.EventsOn("fileOpen", (e: any) => {
+    //   // decode base64 string
+    //   const decoded = JSON.parse(atob(e))[0];
+    //   const newTab = this._tabService.createNewTab(this.tabs.length + 1);
+    //   console.log(decoded.Name, decoded.Content);
+    //   newTab.name = decoded.Name.split("/").pop() || "Untitled";
+    //   newTab.model.setValue(decoded.Content);
+    //   this._setActiveTab(newTab.id);
+    // });
 
-    // capture saveAs event from Go
-    window.runtime.EventsOn("saveAs", () => {
-      // decode base64 string
-      var currTab = this.findTabByName(this._currentTab.toString());
-      window.runtime.EventsEmit(
-        "saveAsResponse",
-        new File(
-          currTab?.name || "Untitled",
-          currTab?.name || "Untitled",
-          currTab?.model.getValue() || ""
-        )
-      );
-    });
+    // // capture saveAs event from Go
+    // window.runtime.EventsOn("saveAs", () => {
+    //   // decode base64 string
+    //   var currTab = this._tabService.findTabByName(this._currentTab.toString());
+    //   window.runtime.EventsEmit(
+    //     "saveAsResponse",
+    //     new File(
+    //       currTab?.name || "Untitled",
+    //       currTab?.name || "Untitled",
+    //       currTab?.model.getValue() || ""
+    //     )
+    //   );
+    // });
   }
 
-  @property({ type: Number }) _currentTab: number = 0;
-  @property({ type: Array }) tabs: Tab[] = [];
-
-  findTabByName(name: string): Tab | undefined {
-    return this.tabs.find((tab) => tab.name === name);
-  }
-
-  findTabById(id: number): Tab | undefined {
-    return this.tabs.find((tab) => tab.id === id);
-  }
-
-  _createNewTab(index: number): Tab {
-    return {
-      id: Math.random(),
-      name: `Untitled-${index}`,
-      model: monaco.editor.createModel("", ""),
-    };
-  }
-
-  _setActiveTab(id: number): void {
-    this._currentTab = id;
-    const tab = this.tabs.find((tab) => tab.id === id);
-    if (tab) {
-      this._editor.editor?.setModel(tab.model);
-    }
-
+  private _setCurrentTab(id: number): void {
+    this._tabService.setCurrentTab(id);
+    this._editor.editor?.setModel(this._tabService.getCurrentTab()?.model!);
     this.shadowRoot?.querySelector(".tabs")?.scrollTo({
       left: document.getElementById(id.toString())?.offsetLeft,
       top: 0,
       behavior: "smooth",
     });
+
+    this.requestUpdate();
   }
 
-  _closeTab(id: number): void {
-    this.tabs = this.tabs.filter((tab) => tab.id !== id);
+  private _closeTab(id: number): void {
+    this._tabService.removeTab(id);
 
-    // if we are on the tab we are closing, switch to the last tab
-    if (this._currentTab === id) {
-      if (this.tabs.length > 0) {
-        this._setActiveTab(this.tabs[this.tabs.length - 1].id);
-      } else {
-        this._editor.editor?.setModel(null);
-      }
+    // switch the view to the last tab if we are closing the current tab
+    if (this._tabService.getCurrentTab() !== undefined) {
+      this._editor.editor?.setModel(this._tabService.getCurrentTab()?.model!);
+    } else {
+      // otherwise, clear the view
+      this._editor.editor?.setModel(null);
     }
+
+    this.requestUpdate();
   }
 
-  _newTab(): void {
-    const newTab = this._createNewTab(this.tabs.length + 1);
-    this.tabs = [...this.tabs, newTab];
-    this._setActiveTab(newTab.id);
+  private _newTab(): void {
+    const newTab = this._tabService.createNewTab(
+      this._tabService.getTabs().length + 1
+    );
+    this._setCurrentTab(newTab.id);
+
+    this.requestUpdate();
   }
 
   firstUpdated() {
     this._editor = this.shadowRoot?.querySelector("code-editor") as CodeEditor;
-    this._editor.editor?.onDidChangeModelContent(() => {
-      this.tabs = this.tabs.map((tab) => {
-        if (tab.id === this._currentTab) {
-          tab.model.setValue(this._editor.getValue());
-        }
-        return tab;
-      });
-    });
-
     // add drag and drop functionality to tabs
-    const tabs = this.shadowRoot?.querySelector(".tabs");
-    if (tabs) {
-      tabs.addEventListener("dragstart", (e) => {
-        const target = e.target as HTMLElement;
-        if (target.classList.contains("tab")) {
-          (e as any).dataTransfer?.setData("text/plain", target.id);
-        }
-      });
+    // const tabs = this.shadowRoot?.querySelector(".tabs");
+    // if (tabs) {
+    //   tabs.addEventListener("dragstart", (e) => {
+    //     const target = e.target as HTMLElement;
+    //     if (target.classList.contains("tab")) {
+    //       (e as any).dataTransfer?.setData("text/plain", target.id);
+    //     }
+    //   });
 
-      tabs.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        const target = e.target as HTMLElement;
-        if (target.classList.contains("tab")) {
-          target.classList.add("dragover");
-        }
-      });
+    //   tabs.addEventListener("dragover", (e) => {
+    //     e.preventDefault();
+    //     const target = e.target as HTMLElement;
+    //     if (target.classList.contains("tab")) {
+    //       target.classList.add("dragover");
+    //     }
+    //   });
 
-      tabs.addEventListener("dragleave", (e) => {
-        const target = e.target as HTMLElement;
-        if (target.classList.contains("tab")) {
-          target.classList.remove("dragover");
-        }
-      });
+    //   tabs.addEventListener("dragleave", (e) => {
+    //     const target = e.target as HTMLElement;
+    //     if (target.classList.contains("tab")) {
+    //       target.classList.remove("dragover");
+    //     }
+    //   });
 
-      tabs.addEventListener("drop", (e) => {
-        e.preventDefault();
-        const target = e.target as HTMLElement;
-        if (target.classList.contains("tab")) {
-          target.classList.remove("dragover");
-          const sourceId = (e as any).dataTransfer?.getData("text/plain");
-          const targetId = target.id;
-          const targetIndex = this.tabs.findIndex(
-            (tab) => tab.id.toString() === targetId
-          );
-          const sourceIndex = this.tabs.findIndex(
-            (tab) => tab.id.toString() === sourceId
-          );
-          const sourceTab = this.tabs[sourceIndex];
-          const targetTab = this.tabs[targetIndex];
-          this.tabs[targetIndex] = sourceTab;
-          this.tabs[sourceIndex] = targetTab;
-          this.requestUpdate();
-        }
-      });
-    }
+    //   tabs.addEventListener("drop", (e) => {
+    //     e.preventDefault();
+    //     const target = e.target as HTMLElement;
+    //     if (target.classList.contains("tab")) {
+    //       target.classList.remove("dragover");
+    //       const sourceId = (e as any).dataTransfer?.getData("text/plain");
+    //       const targetId = target.id;
+    //       const targetIndex = this.tabs.findIndex(
+    //         (tab) => tab.id.toString() === targetId
+    //       );
+    //       const sourceIndex = this.tabs.findIndex(
+    //         (tab) => tab.id.toString() === sourceId
+    //       );
+    //       const sourceTab = this.tabs[sourceIndex];
+    //       const targetTab = this.tabs[targetIndex];
+    //       this.tabs[targetIndex] = sourceTab;
+    //       this.tabs[sourceIndex] = targetTab;
+    //       this.requestUpdate();
+    //     }
+    //   });
+    // }
   }
 
   render() {
     return html`
       <div class="tabs">
-        ${this.tabs.map(
+        ${this._tabService.getTabs().map(
           (tab) => html`
             <div
               id=${tab.id}
-              class="tab ${this._currentTab === tab.id ? "active" : ""}"
-              @click=${() => this._setActiveTab(tab.id)}
+              class="tab ${this._tabService.getCurrentTab()?.id === tab.id
+                ? "active"
+                : ""}"
+              @click=${() => this._setCurrentTab(tab.id)}
               draggable="true"
             >
               ${tab.name}
@@ -188,6 +157,7 @@ class Tabs extends LitElement {
       </main>
     `;
   }
+
   static get styles() {
     return css`
       .main {

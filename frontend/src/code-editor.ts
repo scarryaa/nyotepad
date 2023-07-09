@@ -114,6 +114,10 @@ export class CodeEditor extends LitElement {
         monaco.editor.setTheme(this.getTheme());
       });
   }
+
+  static createModel(value: string, language: string) {
+    return monaco.editor.createModel(value, language);
+  }
 }
 
 declare global {
